@@ -82,6 +82,7 @@ import org.apache.brooklyn.util.guava.Maybe;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 
 public abstract class AbstractManagementContext implements ManagementContextInternal {
     private static final Logger log = LoggerFactory.getLogger(AbstractManagementContext.class);
@@ -241,7 +242,11 @@ public abstract class AbstractManagementContext implements ManagementContextInte
     public ExecutionContext getExecutionContext(Entity e) {
         // BEC is a thin wrapper around EM so fine to create a new one here; but make sure it gets the real entity
         if (e instanceof AbstractEntity) {
-            return new BasicExecutionContext(MutableMap.of("tag", BrooklynTaskTags.tagForContextEntity(e)), getExecutionManager());
+            ImmutableSet<Object> tags = ImmutableSet.<Object>of(
+                    BrooklynTaskTags.tagForContextEntity(e),
+                    this
+            );
+            return new BasicExecutionContext(MutableMap.of("tags", tags), getExecutionManager());
         } else {
             return ((EntityInternal)e).getManagementSupport().getExecutionContext();
         }
@@ -250,7 +255,11 @@ public abstract class AbstractManagementContext implements ManagementContextInte
     @Override
     public ExecutionContext getServerExecutionContext() {
         // BEC is a thin wrapper around EM so fine to create a new one here
-        return new BasicExecutionContext(MutableMap.of("tag", BrooklynTaskTags.BROOKLYN_SERVER_TASK_TAG), getExecutionManager());
+        ImmutableSet<Object> tags = ImmutableSet.<Object>of(
+                this,
+                BrooklynTaskTags.BROOKLYN_SERVER_TASK_TAG
+        );
+        return new BasicExecutionContext(MutableMap.of("tags", tags), getExecutionManager());
     }
 
     @Override
