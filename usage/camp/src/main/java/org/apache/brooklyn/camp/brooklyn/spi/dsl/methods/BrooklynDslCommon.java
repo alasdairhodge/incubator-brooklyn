@@ -35,8 +35,9 @@ import org.apache.brooklyn.camp.brooklyn.spi.creation.EntitySpecConfiguration;
 import org.apache.brooklyn.camp.brooklyn.spi.dsl.BrooklynDslDeferredSupplier;
 import org.apache.brooklyn.camp.brooklyn.spi.dsl.DslUtils;
 import org.apache.brooklyn.camp.brooklyn.spi.dsl.methods.DslComponent.Scope;
+import org.apache.brooklyn.core.config.external.ExternalConfigSupplier;
 import org.apache.brooklyn.core.entity.EntityDynamicType;
-import org.apache.brooklyn.core.entity.EntityInternal;
+import org.apache.brooklyn.core.mgmt.internal.ExternalConfigSupplierRegistry;
 import org.apache.brooklyn.core.mgmt.internal.ManagementContextInternal;
 import org.apache.brooklyn.core.sensor.DependentConfiguration;
 import org.apache.brooklyn.util.collections.MutableMap;
@@ -322,13 +323,12 @@ public class BrooklynDslCommon {
         @Override
         public Task<Object> newTask() {
             return Tasks.<Object>builder()
-                .name("resolving external configuration: '" + key + "' from provider '" + providerName + "'")
+                .displayName("resolving external configuration: '" + key + "' from provider '" + providerName + "'")
                 .dynamic(false)
                 .body(new Callable<Object>() {
                     @Override
                     public Object call() throws Exception {
-                        EntityInternal entity = (EntityInternal) BrooklynDslDeferredSupplier.entity();
-                        ManagementContextInternal managementContext = (ManagementContextInternal) entity.getManagementContext();
+                        ManagementContextInternal managementContext = DslExternal.managementContext();
                         return managementContext.getExternalConfigProviderRegistry().getConfig(providerName, key);
                     }
                 })
