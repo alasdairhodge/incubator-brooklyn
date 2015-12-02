@@ -55,6 +55,7 @@ import org.apache.brooklyn.util.JavaGroovyEquivalents;
 import org.apache.brooklyn.util.collections.MutableSet;
 import org.apache.brooklyn.util.collections.QuorumCheck;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import org.apache.brooklyn.util.core.task.DeferredSupplier;
 import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Maybe;
@@ -135,6 +136,10 @@ public class TypeCoercions {
     /** @see #coerce(Object, Class) */
     @SuppressWarnings({ "unchecked" })
     public static <T> T coerce(Object value, TypeToken<T> targetTypeToken) {
+        if (value instanceof DeferredSupplier<?>) {
+            value = ((DeferredSupplier<?>) value).get();
+        }
+
         if (value==null) return null;
         Class<? super T> targetType = targetTypeToken.getRawType();
 

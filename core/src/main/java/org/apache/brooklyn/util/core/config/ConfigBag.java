@@ -30,7 +30,6 @@ import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.config.ConfigKey.HasConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.util.collections.MutableMap;
-import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.flags.TypeCoercions;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.javalang.JavaClassNames;
@@ -40,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.Beta;
 import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
+import com.google.common.reflect.TypeToken;
 
 /**
  * Stores config in such a way that usage can be tracked.
@@ -345,6 +345,16 @@ public class ConfigBag {
         return get(key, true);
     }
 
+    public <T> T get(String key, Class<T> targetType) {
+        return get(key, TypeToken.of(targetType));
+    }
+
+    public <T> T get(String key, TypeToken<T> targetType) {
+        markUsed(key);
+        Object rawValue = config.get(key);
+        return TypeCoercions.coerce(rawValue, targetType);
+    }
+
     /** gets a value from a string-valued key or null; ConfigKey is preferred, but this is useful in some contexts (e.g. setting from flags) */
     public Object getStringKey(String key) {
         return getStringKeyMaybe(key).orNull();
@@ -460,9 +470,14 @@ public class ConfigBag {
 
     /** returns the first non-null value to be the type indicated by the key, or the keys default value if no non-null values are supplied */
     public static <T> T coerceFirstNonNullKeyValue(ConfigKey<T> key, Object ...values) {
-        for (Object o: values)
-            if (o!=null) return TypeCoercions.coerce(o, key.getTypeToken());
-        return TypeCoercions.coerce(key.getDefaultValue(), key.getTypeToken());
+        Object rawValue = key.getDefaultValue();
+        for (Object o: values) {
+            if (o != null) {
+                rawValue = o;
+                break;
+            }
+        }
+        return TypeCoercions.coerce(rawValue, key.getTypeToken());
     }
 
     protected Object getStringKey(String key, boolean markUsed) {
@@ -471,7 +486,8 @@ public class ConfigBag {
     protected synchronized Maybe<Object> getStringKeyMaybe(String key, boolean markUsed) {
         if (config.containsKey(key)) {
             if (markUsed) markUsed(key);
-            return Maybe.of(config.get(key));
+            Object value = config.get(key);
+            return Maybe.of(value);
         }
         return Maybe.absent();
     }
